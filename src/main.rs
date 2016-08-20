@@ -45,7 +45,7 @@ struct TcpInfo {
 
 
 fn main() {
-    let queue: Arc<MsQueue<SuricataRecord>> = Arc::new(MsQueue::new());
+    let queue: Arc<MsQueue<String>> = Arc::new(MsQueue::new());
     let channel = "suricata";
 
     let producer = queue.clone();
@@ -57,11 +57,14 @@ fn main() {
             Err(msg) => panic!("Unable to subscribe to {}: {}", channel, msg),
         }
         loop {
-            let msg = pubsub.get_message().unwrap();
-            let payload: String = msg.get_payload().unwrap();
-            match json::decode::<SuricataRecord>(&payload) {
-                Ok(data) => producer.push(data),
-                Err(msg) => println!("Error parsing {}: {}", payload, msg),
+            match pubsub.get_message() {
+                Ok(msg) => {
+                    match msg.get_payload() {
+                        Ok(payload) => producer.push(payload),
+                        Err(msg) => println!("Error extracting payload: {}", msg),
+                    }
+                }
+                Err(msg) => println!("Error getting message: {}", msg),
             }
         }
     });
@@ -71,7 +74,10 @@ fn main() {
         thread::spawn(move || {
             loop {
                 let record = consumer.pop();
-                println!("Thread#{}: {:?}", i, record);
+                match json::decode::<SuricataRecord>(&record) {
+                    Ok(data) => println!("Thread#{}: {:?}", i, data),
+                    Err(msg) => println!("Parse error: {}", msg),
+                }
             }
         });
     }
