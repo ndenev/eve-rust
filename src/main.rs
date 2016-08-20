@@ -3,13 +3,11 @@ extern crate docopt;
 extern crate redis;
 extern crate rustc_serialize;
 
-use std::result;
 use std::thread;
 use std::sync::Arc;
 use crossbeam::sync::MsQueue;
-use redis::{Client, Commands, Connection, RedisResult};
+use redis::Client;
 use rustc_serialize::json;
-use rustc_serialize::json::DecodeResult;
 
 
 #[derive(Debug,RustcDecodable)]
@@ -48,12 +46,16 @@ struct TcpInfo {
 
 fn main() {
     let queue: Arc<MsQueue<SuricataRecord>> = Arc::new(MsQueue::new());
+    let channel = "suricata";
 
     let producer = queue.clone();
     let listener = thread::spawn(move || {
         let client = Client::open("redis://10.0.0.13/").unwrap();
         let mut pubsub = client.get_pubsub().unwrap();
-        pubsub.subscribe("suricata").unwrap();
+        match pubsub.subscribe(channel) {
+            Ok(_) => println!("Subscribed to pubsub channel {}", channel),
+            Err(msg) => panic!("Unable to subscribe to {}: {}", channel, msg),
+        }
         loop {
             let msg = pubsub.get_message().unwrap();
             let payload: String = msg.get_payload().unwrap();
