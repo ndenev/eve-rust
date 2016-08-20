@@ -7,3 +7,4 @@ authors = ["Nikolay Denev <ndenev@gmail.com>"]
 crossbeam = "0.2.10"
 docopt = "0.6.82"
 redis = "*"
+rustc-serialize = "0.3"
