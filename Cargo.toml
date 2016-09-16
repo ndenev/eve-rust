@@ -2,9 +2,14 @@
 name = "parust"
 version = "0.1.0"
 authors = ["Nikolay Denev <ndenev@gmail.com>"]
+build = "build.rs"
+
+[build-dependencies]
+serde_codegen = "*"
 
 [dependencies]
 crossbeam = "0.2.10"
 docopt = "0.6.82"
 redis = "*"
-rustc-serialize = "0.3"
+serde = "*"
+serde_json = "*"
