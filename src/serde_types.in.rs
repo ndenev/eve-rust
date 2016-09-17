@@ -1,20 +1,20 @@
 #[derive(Debug,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct EveJsonRecord {
-	#[serde(deserialize_with="deserialize_ip")]
+    #[serde(deserialize_with="deserialize_ip")]
     dest_ip: IpAddr,
     dest_port: u64,
     event_type: EventType,
     flow_id: u64,
     host: String,
     proto: String,
-	#[serde(deserialize_with="deserialize_ip")]
+    #[serde(deserialize_with="deserialize_ip")]
     src_ip: IpAddr,
     src_port: u64,
     icmp_type: Option<u8>,
     icmp_code: Option<u8>,
     //timestamp: String,
-	timestamp: DateTime<UTC>,
+    timestamp: DateTime<UTC>,
     app_proto: Option<String>,
     in_iface: Option<String>,
     tx_id: Option<u64>,
@@ -29,16 +29,16 @@ struct EveJsonRecord {
 } 
 
 fn deserialize_ip<D>(de: &mut D) -> Result<IpAddr, D::Error> where D: serde::Deserializer {
-	let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
-	match deser_result {
-		serde_json::Value::String(ref s) => {
-			match IpAddr::from_str(s) {
-				Ok(ip) => Ok(ip),
-				Err(m) => Err(serde::de::Error::custom(format!("Unable to parse IP address: {}", m))),
-			}
-		},
-		_ => Err(serde::de::Error::custom("Expected string containing ip address.")),
-	}
+    let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
+    match deser_result {
+        serde_json::Value::String(ref s) => {
+            match IpAddr::from_str(s) {
+                Ok(ip) => Ok(ip),
+                Err(m) => Err(serde::de::Error::custom(format!("Unable to parse IP address: {}", m))),
+            }
+        },
+        _ => Err(serde::de::Error::custom("Expected string containing ip address.")),
+    }
 }
 
 #[derive(Debug,Deserialize)]
@@ -73,19 +73,19 @@ struct NetflowInfo {
 #[serde(deny_unknown_fields)]
 struct TcpInfo {
     tcp_flags: String,
-	#[serde(default)]
+    #[serde(default)]
     ack: bool,
-	#[serde(default)]
+    #[serde(default)]
     cwr: bool,
-	#[serde(default)]
+    #[serde(default)]
     ecn: bool,
-	#[serde(default)]
+    #[serde(default)]
     fin: bool,
-	#[serde(default)]
+    #[serde(default)]
     psh: bool,
-	#[serde(default)]
+    #[serde(default)]
     rst: bool,
-	#[serde(default)]
+    #[serde(default)]
     syn: bool,
 }
 
