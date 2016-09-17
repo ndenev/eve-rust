@@ -1,4 +1,5 @@
 extern crate crossbeam;
+extern crate chrono;
 extern crate docopt;
 extern crate redis;
 extern crate serde;
@@ -6,7 +7,11 @@ extern crate serde_json;
 
 use std::thread;
 use std::sync::Arc;
+use std::net::IpAddr;
+use std::str::FromStr;
 use crossbeam::sync::MsQueue;
+use chrono::DateTime;
+use chrono::offset::utc::UTC;
 use redis::Client;
 
 include!(concat!(env!("OUT_DIR"), "/serde_types.rs"));
@@ -42,19 +47,21 @@ fn main() {
             loop {
                 let record = consumer.pop();
                 match serde_json::from_str::<EveJsonRecord>(&record) {
-                    Ok(data) => {
-                        match &data.event_type as &str {
-                            //"netflow" => {}, //println!("Thread#{}: {:?}", i, d),
-                            //"http" => {}, //println!("Thread#{}: {:?}", i, d),
-                            //"tls" => {}, //println!("Thread#{}: {:?}", i, d),
-                            _ => {
-                                //println!("*********************************");
-                                //println!("RECORD: {:?}", record);
-                                //println!("PARSED: {:?}", data);
-                                //println!("*********************************");
-                                //println!("");
-                            }
+                    Ok(event) => {
+                        println!("***********************************");
+                        match event.event_type {
+                            EventType::Netflow => println!("* NETFLOW"),
+                            EventType::Alert => println!("* ALERT"),
+							EventType::Dns => println!("* DNS"),
+							EventType::Http => println!("* HTTP"),
+							EventType::Tcp => println!("* TCP"),
+							EventType::Tls => println!("* TLS"),
+							EventType::Fileinfo => println!("* FILEINFO"),
                         }
+                        println!("***********************************");
+						println!("{:?}", event);
+						println!("");
+						println!("");
                     },
                     Err(msg) => {
                         println!("Parse error: {}", msg);
