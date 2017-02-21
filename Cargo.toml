@@ -1,5 +1,5 @@
 [package]
-name = "parust"
+name = "eve-rust"
 version = "0.1.0"
 authors = ["Nikolay Denev <ndenev@gmail.com>"]
 build = "build.rs"
