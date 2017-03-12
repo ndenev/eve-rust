@@ -9,10 +9,11 @@ use std::thread;
 use std::sync::Arc;
 use std::net::IpAddr;
 use std::str::FromStr;
+use std::fmt::Display;
 use crossbeam::sync::MsQueue;
-use chrono::DateTime;
+use chrono::{DateTime, NaiveDateTime, Datelike, Timelike};
 use chrono::offset::utc::UTC;
-use redis::Client;
+//use redis::Client;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::fs::File;
@@ -23,6 +24,7 @@ fn main() {
     let queue: Arc<MsQueue<String>> = Arc::new(MsQueue::new());
 
 
+    /*
     let redis_producer_queue = queue.clone();
     let listener = thread::spawn(move || {
         let channel = "suricata";
@@ -44,13 +46,12 @@ fn main() {
             }
         }
     });
-
+    */
 
     let file_producer_queue = queue.clone();
     let reader = thread::spawn(move || {
-        return;
-        let eve_file = File::open("eve.json").unwrap();
-        let mut eve_reader = BufReader::new(&eve_file);
+        let eve_file = File::open("/var/log/suricata/eve.json").unwrap();
+        let eve_reader = BufReader::new(&eve_file);
         for event in eve_reader.lines() {
             file_producer_queue.push(event.unwrap());
         }
@@ -69,13 +70,17 @@ fn main() {
                             EventType::Fileinfo => println!("* FILEINFO"),
                             EventType::Http => println!("* HTTP"),
                             EventType::Tcp => println!("* TCP"),
-                            EventType::Tls => println!("* TLS"),
+                            EventType::Tls => {
+                                println!("* TLS");
+                                println!("{}", serde_json::to_string_pretty(&event).unwrap());
+                            },
                             EventType::Alert => println!("* ALERT"),
+                            EventType::Drop => println!("* Drop"),
                             EventType::Flow => println!("* FLOW"),
                             EventType::Netflow => println!("* NETFLOW"),
                             EventType::Ssh => println!("* SSH"),
                         }
-                        println!("{}", serde_json::to_string_pretty(&event).unwrap());
+                        //println!("{}", serde_json::to_string_pretty(&event).unwrap());
                     },
                     Err(msg) => {
                         println!("Parse error: {}", msg);
@@ -86,7 +91,8 @@ fn main() {
         });
     }
 
+    loop {};
     reader.join().unwrap();
-    listener.join().unwrap();
+    //listener.join().unwrap();
 }
 

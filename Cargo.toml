@@ -1,16 +1,21 @@
 [package]
 name = "eve-rust"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Nikolay Denev <ndenev@gmail.com>"]
 build = "build.rs"
 
+[features]
+default = ["serde_codegen"]
+unstable = ["serde_derive"]
+
 [build-dependencies]
-serde_codegen = "*"
+serde_codegen = { version = "0.8", optional = true }
 
 [dependencies]
-crossbeam = "0.2.10"
-docopt = "0.6.82"
+serde = "0.8"
+serde_derive = { version = "0.8", optional = true }
+serde_json = "0.8"
+crossbeam = "*"
+docopt = "0.6"
 redis = "*"
-serde = "*"
-serde_json = "*"
-chrono = { version = "0.2", features = ["serde"] }
+chrono = { version = "0.3", features = ["serde"] }

@@ -6,34 +6,108 @@ struct EveJsonRecord {
     dest_port: Option<u64>,
     event_type: EventType,
     flow_id: u64,
-    /// host field is only set in redis
+    #[serde(skip_serializing_if="Option::is_none")]
     host: Option<String>,
     proto: EventProtocol,
     #[serde(deserialize_with="deserialize_ip",serialize_with="serialize_ip")]
     src_ip: IpAddr,
     src_port: Option<u64>,
+    #[serde(skip_serializing_if="Option::is_none")]
     icmp_type: Option<u8>,
+    #[serde(skip_serializing_if="Option::is_none")]
     icmp_code: Option<u8>,
+    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     timestamp: DateTime<UTC>,
+    #[serde(skip_serializing_if="Option::is_none")]
     app_proto: Option<String>,
     in_iface: Option<String>,
     tx_id: Option<u64>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
     payload: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     payload_printable: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     stream: Option<u64>,
+    #[serde(skip_serializing_if="Option::is_none")]
     packet: Option<String>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
     alert: Option<Box<AlertInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    drop: Option<Box<DropInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     dns: Option<Box<DnsInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     http: Option<Box<HttpInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     netflow: Option<Box<NetflowInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     flow: Option<Box<FlowInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     tcp: Option<Box<TcpInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     tls: Option<Box<TlsInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     fileinfo: Option<Box<FileInfo>>,
+    #[serde(skip_serializing_if="Option::is_none")]
     ssh: Option<Box<SshInfo>>,
 } 
+
+#[derive(Debug,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+enum EventData {
+    Alert { alert: AlertInfo },
+    Drop { drop: DropInfo },
+    Dns { dns: DnsInfo },
+    Http { http: HttpInfo },
+    Netflow { netflow: NetflowInfo },
+    Flow { flow: FlowInfo },
+    Tcp { tcp: TcpInfo },
+    Tls { tls: TlsInfo },
+    Fileinfo { fileinfo: FileInfo },
+    Ssh { ssh: SshInfo },
+}
+
+fn serialize_datetime_naive<S, D>(dt: &D, se: &mut S) -> Result<(), S::Error>
+    where S: serde::Serializer, D: Datelike + Timelike, T: TimeZone + Display {
+    se.serialize_str(&format!("{}", dt.format("%Y-%m-%dT%H:%M:%S")))
+}
+
+//fn serialize_datetime_naive<S>(dt: &DateTime<UTC>, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
+//    se.serialize_str(&format!("{}", dt.format("%Y-%m-%dT%H:%M:%S")))
+//
+
+
+fn deserialize_datetime_naive<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
+    let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
+    match deser_result {
+        serde_json::Value::String(ref s) => {
+            match NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S") {
+                Ok(dt) => Ok(DateTime::<UTC>::from_utc(dt, UTC)),
+                Err(m) => Err(serde::de::Error::custom(format!("Unable to parse datetime: {}", m))),
+            }
+        },
+        _ => Err(serde::de::Error::custom("Expected string containing datetime.")),
+    }
+}
+
+fn serialize_datetime_utc<S>(dt: &DateTime<UTC>, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
+    se.serialize_str(&format!("{}", dt))
+}
+
+fn deserialize_datetime_utc<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
+    let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
+    match deser_result {
+        serde_json::Value::String(ref s) => {
+            match DateTime::<UTC>::from_str(s) {
+                Ok(dt) => Ok(dt),
+                Err(m) => Err(serde::de::Error::custom(format!("Unable to parse datetime: {}", m))),
+            }
+        },
+        _ => Err(serde::de::Error::custom("Expected string containing datetime.")),
+    }
+}
 
 fn serialize_ip<S>(ip: &IpAddr, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
     se.serialize_str(&format!("{}", ip))
@@ -56,6 +130,8 @@ fn deserialize_ip<D>(de: &mut D) -> Result<IpAddr, D::Error> where D: serde::Des
 enum EventType {
     #[serde(rename="alert")]
     Alert,
+    #[serde(rename="drop")]
+    Drop,
     #[serde(rename="dns")]
     Dns,
     #[serde(rename="http")]
@@ -92,7 +168,9 @@ struct NetflowInfo {
     age: u64,
     bytes: u64,
     pkts: u64,
+    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     start: DateTime<UTC>,
+    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     end: DateTime<UTC>,
 }
 
@@ -103,11 +181,33 @@ struct FlowInfo {
     pkts_toclient: u64,
     bytes_toserver: u64,
     bytes_toclient: u64,
+    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     start: DateTime<UTC>,
+    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     end: DateTime<UTC>,
     age: u64,
     state: String,
     reason: String,
+}
+
+#[derive(Debug,Serialize,Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DropInfo {
+    len: u64,
+    tos: u8,
+    ttl: u8,
+    ipid: u64,
+    tcpseq: u64,
+    tcpack: u64,
+    tcpwin: u64,
+    syn: bool,
+    ack: bool,
+    psh: bool,
+    rst: bool,
+    urg: bool,
+    fin: bool,
+    tcpres: u64,
+    tcpurgp: u64,
 }
 
 #[derive(Debug,Serialize,Deserialize)]
@@ -139,7 +239,7 @@ struct DnsInfo {
     #[serde(rename="type")]
     _type: String,
     id: u64,
-    rrname: String,
+    rrname: Option<String>,
     rrtype: Option<String>,
     rtype: Option<String>,
     rcode: Option<String>,
@@ -151,11 +251,15 @@ struct DnsInfo {
 #[derive(Debug,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct TlsInfo {
-    subject: String,
-    issuerdn: String,
-    fingerprint: String,
+    subject: Option<String>,
+    issuerdn: Option<String>,
+    fingerprint: Option<String>,
     sni: Option<String>,
     version: String,
+    #[serde(deserialize_with="deserialize_datetime_naive",serialize_with="serialize_datetime_naive")]
+    notbefore: DateTime<UTC>,
+    #[serde(deserialize_with="deserialize_datetime_naive",serialize_with="serialize_datetime_naive")]
+    notafter: DateTime<UTC>,
 }
 
 #[derive(Debug,Serialize,Deserialize)]
@@ -200,7 +304,7 @@ struct AlertInfo {
 #[serde(deny_unknown_fields)]
 struct FileInfo {
     filename: String,
-    magic: String,
+    magic: Option<String>,
     md5: Option<String>,
     state: String,
     stored: bool,
