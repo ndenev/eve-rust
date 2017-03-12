@@ -9,7 +9,7 @@ use std::thread;
 use std::sync::Arc;
 use std::net::IpAddr;
 use std::str::FromStr;
-use std::fmt::Display;
+use std::fmt::{Display, Debug};
 use crossbeam::sync::MsQueue;
 use chrono::{DateTime, NaiveDateTime, Datelike, Timelike};
 use chrono::offset::utc::UTC;
@@ -50,7 +50,7 @@ fn main() {
 
     let file_producer_queue = queue.clone();
     let reader = thread::spawn(move || {
-        let eve_file = File::open("/var/log/suricata/eve.json").unwrap();
+        let eve_file = File::open("eve.json").unwrap();
         let eve_reader = BufReader::new(&eve_file);
         for event in eve_reader.lines() {
             file_producer_queue.push(event.unwrap());
@@ -65,6 +65,7 @@ fn main() {
                 let record = consumer.pop();
                 match serde_json::from_str::<EveJsonRecord>(&record) {
                     Ok(event) => {
+                    /*
                         match event.event_type {
                             EventType::Dns => println!("* DNS"),
                             EventType::Fileinfo => println!("* FILEINFO"),
@@ -80,7 +81,7 @@ fn main() {
                             EventType::Netflow => println!("* NETFLOW"),
                             EventType::Ssh => println!("* SSH"),
                         }
-                        //println!("{}", serde_json::to_string_pretty(&event).unwrap());
+                        //println!("{}", serde_json::to_string_pretty(&event).unwrap()); */
                     },
                     Err(msg) => {
                         println!("Parse error: {}", msg);

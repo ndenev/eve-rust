@@ -69,9 +69,13 @@ enum EventData {
     Ssh { ssh: SshInfo },
 }
 
-fn serialize_datetime_naive<S, D>(dt: &D, se: &mut S) -> Result<(), S::Error>
-    where S: serde::Serializer, D: Datelike + Timelike, T: TimeZone + Display {
-    se.serialize_str(&format!("{}", dt.format("%Y-%m-%dT%H:%M:%S")))
+fn serialize_datetime_naive<S, D>(dt: &Option<D>, se: &mut S) -> Result<(), S::Error>
+    where S: serde::Serializer, D: Datelike + Timelike + Debug {
+    //se.serialize_str(&format!("{}", dt.format("%Y-%m-%dT%H:%M:%S")))
+    match dt {
+        Some(d) => se.serialize_str(&format!("{:?}", d)),
+        None => {},
+    }
 }
 
 //fn serialize_datetime_naive<S>(dt: &DateTime<UTC>, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
@@ -79,7 +83,7 @@ fn serialize_datetime_naive<S, D>(dt: &D, se: &mut S) -> Result<(), S::Error>
 //
 
 
-fn deserialize_datetime_naive<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
+fn deserialize_datetime_naive<D>(de: &mut Option<D>) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
     let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
     match deser_result {
         serde_json::Value::String(ref s) => {
@@ -257,9 +261,9 @@ struct TlsInfo {
     sni: Option<String>,
     version: String,
     #[serde(deserialize_with="deserialize_datetime_naive",serialize_with="serialize_datetime_naive")]
-    notbefore: DateTime<UTC>,
+    notbefore: Option<DateTime<UTC>>,
     #[serde(deserialize_with="deserialize_datetime_naive",serialize_with="serialize_datetime_naive")]
-    notafter: DateTime<UTC>,
+    notafter: Option<DateTime<UTC>>,
 }
 
 #[derive(Debug,Serialize,Deserialize)]
@@ -298,6 +302,7 @@ struct AlertInfo {
     signature: String,
     category: String,
     severity: u64,
+    tls: Option<TlsInfo>,
 }
 
 #[derive(Debug,Serialize,Deserialize)]
