@@ -1,0 +1,21 @@
+{
+    "version": "0.1.0",
+    "command": "cargo",
+    "isShellCommand": true,
+    "args": [],
+    "showOutput": "always",
+    "echoCommand": true,
+    "suppressTaskName": true,
+    "tasks": [
+        {
+            "taskName": "debug",
+            "args": ["build", "-j4"],
+            "isBuildCommand": true,
+        },
+        {
+            "taskName": "release",
+            "args": ["build", "-j4", "--release"],
+            "isBuildCommand": true,
+        }
+    ]
+}
