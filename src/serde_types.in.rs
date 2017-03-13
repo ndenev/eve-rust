@@ -69,21 +69,28 @@ enum EventData {
     Ssh { ssh: SshInfo },
 }
 
-fn serialize_datetime_naive<S, D>(dt: &Option<D>, se: &mut S) -> Result<(), S::Error>
-    where S: serde::Serializer, D: Datelike + Timelike + Debug {
-    //se.serialize_str(&format!("{}", dt.format("%Y-%m-%dT%H:%M:%S")))
-    match dt {
-        Some(d) => se.serialize_str(&format!("{:?}", d)),
-        None => {},
-    }
+pub fn serialize_datetime_naive_optional<S>(date: &Option<DateTime<UTC>>, serializer: S) -> Result<(), S::Error>
+    where S: serde::Serializer
+{
+    const FORMAT: &'static str = "%Y-%m-%d %H:%M:%S";
+    let s = format!("{}", date.format(FORMAT));
+    serializer.serialize_str(&s)
 }
+/*
+fn serialize_datetime_naive_optional<S, D>(dt: Option<D>, se: &mut S) -> Result<(), S::Error>
+    where S: serde::Serializer, D: Datelike + Timelike + Display + Debug {
+    //se.serialize_str(&format!("{:?}", dt.format("%Y-%m-%dT%H:%M:%S")))
+    se.serialize_str(&format!("{}", dt))
+}*/
 
-//fn serialize_datetime_naive<S>(dt: &DateTime<UTC>, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
-//    se.serialize_str(&format!("{}", dt.format("%Y-%m-%dT%H:%M:%S")))
-//
-
-
-fn deserialize_datetime_naive<D>(de: &mut Option<D>) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
+pub fn deserialize_datetime_naive_optional<D>(deserializer: D) -> Result<Option<DateTime<UTC>>, D::Error>
+    where D: serde::Deserializer
+{
+    let s = String::deserialize(deserializer)?;
+    UTC.datetime_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
+}
+/*
+fn deserialize_datetime_naive_optional<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
     let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
     match deser_result {
         serde_json::Value::String(ref s) => {
@@ -95,7 +102,7 @@ fn deserialize_datetime_naive<D>(de: &mut Option<D>) -> Result<DateTime<UTC>, D:
         _ => Err(serde::de::Error::custom("Expected string containing datetime.")),
     }
 }
-
+*/
 fn serialize_datetime_utc<S>(dt: &DateTime<UTC>, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
     se.serialize_str(&format!("{}", dt))
 }
@@ -260,9 +267,9 @@ struct TlsInfo {
     fingerprint: Option<String>,
     sni: Option<String>,
     version: String,
-    #[serde(deserialize_with="deserialize_datetime_naive",serialize_with="serialize_datetime_naive")]
+    #[serde(deserialize_with="deserialize_datetime_naive_optional",serialize_with="serialize_datetime_naive_optional")]
     notbefore: Option<DateTime<UTC>>,
-    #[serde(deserialize_with="deserialize_datetime_naive",serialize_with="serialize_datetime_naive")]
+    #[serde(deserialize_with="deserialize_datetime_naive_optional",serialize_with="serialize_datetime_naive_optional")]
     notafter: Option<DateTime<UTC>>,
 }
 
