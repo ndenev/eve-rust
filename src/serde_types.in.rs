@@ -1,7 +1,6 @@
 #[derive(Debug,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct EveJsonRecord {
-    #[serde(deserialize_with="deserialize_ip",serialize_with="serialize_ip")]
     dest_ip: IpAddr,
     dest_port: Option<u64>,
     event_type: EventType,
@@ -9,14 +8,12 @@ struct EveJsonRecord {
     #[serde(skip_serializing_if="Option::is_none")]
     host: Option<String>,
     proto: EventProtocol,
-    #[serde(deserialize_with="deserialize_ip",serialize_with="serialize_ip")]
     src_ip: IpAddr,
     src_port: Option<u64>,
     #[serde(skip_serializing_if="Option::is_none")]
     icmp_type: Option<u8>,
     #[serde(skip_serializing_if="Option::is_none")]
     icmp_code: Option<u8>,
-    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     timestamp: DateTime<UTC>,
     #[serde(skip_serializing_if="Option::is_none")]
     app_proto: Option<String>,
@@ -69,73 +66,40 @@ enum EventData {
     Ssh { ssh: SshInfo },
 }
 
-pub fn serialize_datetime_naive_optional<S>(date: &Option<DateTime<UTC>>, serializer: S) -> Result<(), S::Error>
-    where S: serde::Serializer
-{
-    const FORMAT: &'static str = "%Y-%m-%d %H:%M:%S";
-    let s = format!("{}", date.format(FORMAT));
-    serializer.serialize_str(&s)
-}
-/*
-fn serialize_datetime_naive_optional<S, D>(dt: Option<D>, se: &mut S) -> Result<(), S::Error>
-    where S: serde::Serializer, D: Datelike + Timelike + Display + Debug {
-    //se.serialize_str(&format!("{:?}", dt.format("%Y-%m-%dT%H:%M:%S")))
-    se.serialize_str(&format!("{}", dt))
-}*/
+// const FORMAT: &'static str = "%Y-%m-%d %H:%M:%S";
 
-pub fn deserialize_datetime_naive_optional<D>(deserializer: D) -> Result<Option<DateTime<UTC>>, D::Error>
-    where D: serde::Deserializer
-{
-    let s = String::deserialize(deserializer)?;
-    UTC.datetime_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
-}
-/*
-fn deserialize_datetime_naive_optional<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
-    let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
-    match deser_result {
-        serde_json::Value::String(ref s) => {
-            match NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S") {
-                Ok(dt) => Ok(DateTime::<UTC>::from_utc(dt, UTC)),
-                Err(m) => Err(serde::de::Error::custom(format!("Unable to parse datetime: {}", m))),
-            }
-        },
-        _ => Err(serde::de::Error::custom("Expected string containing datetime.")),
-    }
-}
-*/
-fn serialize_datetime_utc<S>(dt: &DateTime<UTC>, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
-    se.serialize_str(&format!("{}", dt))
-}
+// fn serialize_datetime_naive_optional<S>(date: &Option<DateTime<UTC>>, serializer: S) -> Result<(), S::Error>
+//     where S: serde::Serializer
+// {
+//     let s = format!("{}", date.format(FORMAT));
+//     serializer.serialize_str(&s)
+// }
 
-fn deserialize_datetime_utc<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
-    let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
-    match deser_result {
-        serde_json::Value::String(ref s) => {
-            match DateTime::<UTC>::from_str(s) {
-                Ok(dt) => Ok(dt),
-                Err(m) => Err(serde::de::Error::custom(format!("Unable to parse datetime: {}", m))),
-            }
-        },
-        _ => Err(serde::de::Error::custom("Expected string containing datetime.")),
-    }
-}
+// fn serialize_datetime_naive_optional<S, D>(dt: Option<D>, se: &mut S) -> Result<(), S::Error>
+//     where S: serde::Serializer, D: Datelike + Timelike + Display + Debug {
+//     //se.serialize_str(&format!("{:?}", dt.format("%Y-%m-%dT%H:%M:%S")))
+//     se.serialize_str(&format!("{}", dt))
+// }
 
-fn serialize_ip<S>(ip: &IpAddr, se: &mut S) -> Result<(), S::Error> where S: serde::Serializer {
-    se.serialize_str(&format!("{}", ip))
-}
+// fn deserialize_datetime_naive_optional<D>(deserializer: D) -> Result<Option<DateTime<UTC>>, D::Error>
+//     where D: serde::Deserializer
+// {
+//     let s = String::deserialize(deserializer)?;
+//     UTC.datetime_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
+// }
 
-fn deserialize_ip<D>(de: &mut D) -> Result<IpAddr, D::Error> where D: serde::Deserializer {
-    let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
-    match deser_result {
-        serde_json::Value::String(ref s) => {
-            match IpAddr::from_str(s) {
-                Ok(ip) => Ok(ip),
-                Err(m) => Err(serde::de::Error::custom(format!("Unable to parse IP address: {}", m))),
-            }
-        },
-        _ => Err(serde::de::Error::custom("Expected string containing ip address.")),
-    }
-}
+// fn deserialize_datetime_naive_optional<D>(de: &mut D) -> Result<DateTime<UTC>, D::Error> where D: serde::Deserializer {
+//     let deser_result: serde_json::Value = serde::Deserialize::deserialize(de).unwrap();
+//     match deser_result {
+//         serde_json::Value::String(ref s) => {
+//             match NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S") {
+//                 Ok(dt) => Ok(DateTime::<UTC>::from_utc(dt, UTC)),
+//                 Err(m) => Err(serde::de::Error::custom(format!("Unable to parse datetime: {}", m))),
+//             }
+//         },
+//         _ => Err(serde::de::Error::custom("Expected string containing datetime.")),
+//     }
+// }
 
 #[derive(Debug,Serialize,Deserialize)]
 enum EventType {
@@ -179,9 +143,7 @@ struct NetflowInfo {
     age: u64,
     bytes: u64,
     pkts: u64,
-    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     start: DateTime<UTC>,
-    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     end: DateTime<UTC>,
 }
 
@@ -192,9 +154,7 @@ struct FlowInfo {
     pkts_toclient: u64,
     bytes_toserver: u64,
     bytes_toclient: u64,
-    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     start: DateTime<UTC>,
-    #[serde(deserialize_with="deserialize_datetime_utc",serialize_with="serialize_datetime_utc")]
     end: DateTime<UTC>,
     age: u64,
     state: String,
@@ -267,11 +227,50 @@ struct TlsInfo {
     fingerprint: Option<String>,
     sni: Option<String>,
     version: String,
-    #[serde(deserialize_with="deserialize_datetime_naive_optional",serialize_with="serialize_datetime_naive_optional")]
+    #[serde(skip_serializing_if="Option::is_none",deserialize_with="tls_date::deserialize",serialize_with="tls_date::serialize")]
     notbefore: Option<DateTime<UTC>>,
-    #[serde(deserialize_with="deserialize_datetime_naive_optional",serialize_with="serialize_datetime_naive_optional")]
+    #[serde(skip_serializing_if="Option::is_none",deserialize_with="tls_date::deserialize",serialize_with="tls_date::serialize")]
     notafter: Option<DateTime<UTC>>,
 }
+
+// #[serde(serialize_with = "path")]
+// Serialize this field using a function that is different from its implementation of Serialize. The given function must be callable as fn<S>(&T, S) -> Result<S::Ok, S::Error> where S: Serializer, although it may also be generic over T. Fields used with serialize_with do not need to implement Serialize.
+
+// #[serde(deserialize_with = "path")]
+// Deserialize this field using a function that is different from its implementation of Deserialize. The given function must be callable as fn<D>(D) -> Result<T, D::Error> where D: Deserializer, although it may also be generic over T. Fields used with deserialize_with do not need to implement Deserialize.
+
+mod tls_date {
+    use chrono::{DateTime, UTC, TimeZone};
+    use serde::{self, Deserialize, Serializer, Deserializer};
+
+    const FORMAT: &'static str = "%Y-%m-%dT%H:%M:%S";
+
+    // The signature of a serialize_with function must follow the pattern:
+    //
+    //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error> where S: Serializer
+    //
+    // although it may also be generic over the input types T.
+    pub fn serialize<S>(date: &DateTime<UTC>, serializer: S) -> Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+            let s = format!("{}", date.format(FORMAT));
+            serializer.serialize_str(&s)
+    }
+
+    // The signature of a deserialize_with function must follow the pattern:
+    //
+    //    fn deserialize<D>(D) -> Result<T, D::Error> where D: Deserializer
+    //
+    // although it may also be generic over the output types T.
+    pub fn deserialize<D>(deserializer: D) -> Result<DateTime<UTC>, D::Error>
+        where D: Deserializer
+    {
+        let s = String::deserialize(deserializer)?;
+        UTC.datetime_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
+    }
+}
+
+
 
 #[derive(Debug,Serialize,Deserialize)]
 #[serde(deny_unknown_fields)]
